@@ -1,0 +1,6 @@
+*~
+*.fx2
+*.elf
+*.imp.a
+build/
+lib/
