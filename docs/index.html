@@ -9,7 +9,11 @@
 <body>
 
 <h1>μSTL for FeOS</h1>
-<p><em>Candy for the optimization nut in you</em></p>
+<p style="font-size:130%"><a href="http://feos.mtheall.com/ustl-feos.tar.bz2">Download</a>
+| <a href="http://feos.mtheall.com/forum/viewtopic.php?f=9&t=24">Discuss</a>
+| <a href="http://ustl.sourceforge.net/html/index.html">Reference</a>
+| <a href="http://ustl.sourceforge.net/">Official homepage</a></p>
+<p><em>Last updated: February 19, 2012 - r2 (based on μSTL v1.6)</em></p>
 <h2 id="Introduction">Introduction</h2>
 <p>
 The C++ standard template library (STL) is a collection of common
@@ -19,20 +23,13 @@ size.  Not only is the library itself large, the current version being
 over a megabyte in size, but with all the code you instantiate by using a
 vector for each of your containers, it is easy to become fearful and opt
 for using static arrays instead or, worse yet, abandon C++ altogether
-for C.  This is especially painful to former DOS assembly programmers
-like myself, who fret endlessly when the size of the executable crosses
-the magic 64k boundary, forgetting that nobody cares about memory anymore.
+for C.
 </p><p>
-Of course, these days everyone has gigabytes of RAM and has no compunction
-about loading up OpenOffice, whose source tree is over a gigabyte in
-size. Why then bother with saving a kilobyte of code here and there? I
-can't really say. Maybe it's that warm fuzzy knowledge that you are making
-maximum possible use of your computer's resources. Maybe it's that thrill
-you get after expressing your program's functionality in the fewest
-possible instructions and the minimum imaginable overhead. Or maybe it
-really is of no importance and any code bloat will be easily overcome
-by faster processors in some near future. I just know what I like, and
-it's the sight of clean, concise, and fast code. Therefore this library.
+The problem is aggravated by the Nintendo DS' small RAM: just 4 MB. Not
+only gcc's STL implementation is frowned upon, it also eats up a lot of the
+preciously-limited RAM!  Enter μSTL. Its FeOS port is only <strong>11 KB</strong>
+in size, and a simple program that uses vectors, strings and UTF-8 is just
+<strong>2 KB</strong>. This is why it's FeOS' recommended STL implementation.
 </p>
 <h2>Contents</h2>
 <ul>
@@ -44,58 +41,32 @@ it's the sight of clean, concise, and fast code. Therefore this library.
 	<li><a href="#Streams">Streams</a></li>
 	<li><a href="#Tuples">Tuples</a></li>
 	<li><a href="#Exceptions">Exceptions</a></li>
-	<li><a href="#Savings">Template Bloat Be Gone</a></li>
 </ul>
 <h2 id="Installation">Installation</h2>
 <p>
-To start with you'll need a decent compiler. Although μSTL will compile
-under gcc 2.95, some features require at least gcc 3.4 and are simply
-turned off with an older version. C++ support is vastly improved in
-the recent compiler versions, and I strongly recommend gcc 4 for best
-possible code.
-</p><p>
-The latest version of μSTL can always be downloaded from its SourceForge
-<a href="https://sourceforge.net/project/showfiles.php?group_id=76798">project files page</a>.
-If you like living dangerously, you can pull the working branch directly from
-<a href="http://ustl.git.sourceforge.net/git/gitweb.cgi?p=ustl">git://ustl.git.sourceforge.net/gitroot/ustl/ustl</a>.
-The mainline source should build on any unix-based system, including Linux,
-BSD, MacOS, SunOS, and Solaris. A separate port for Symbian OS is maintained by
-<a href="http://www.penrillian.com/index.php?option=com_content&amp;task=view&amp;id=82&amp;Itemid=73">Penrillian</a>.
-Windows-based systems and weird embedded platforms, are not, and will
-not be supported by the mainline. However, if you make a port, I'll be
-happy to mention it here. After unpacking:
+The FeOS port of μSTL is very easy to install. All you need to do is
+copy this folder to your <code>sdk/userlib</code> directory, and issue
+this command:
+</p><pre>make install</pre><p>
+In order to link to μSTL, you have to edit your project's Makefile in
+order to add several variables:
 </p><pre>
-./configure
-make install
+CONF_USERLIBS := ustl
+CONF_LIBS := -lustl
 </pre><p>
-<code>./configure --help</code> lists available build options.
-You might want to specify a different installation prefix with
-<code>--prefix=/usr</code>; the default destination is /usr/local.
-Developers will want to build with <code>--with-debug</code> to get a
-lot of assert error checking, which I highly recommend. If you have
-gcc 4.4 or later, you may want to also use <code>--force-inline</code>
-(see the bottom of this page for a fuller explanation). If you are the
-type to edit configuration manually, it's in Config.mk and config.h. When
-it's built, you can run the included tests with <code>make check</code>.
 Finally, here's a simple hello world application:
 </p><pre>
+#include &lt;stdio.h&gt;
 #include &lt;ustl.h&gt;
 using namespace ustl;
 
-int main (void)
+int main()
 {
-	cout &lt;&lt; "Hello world!\n";
-	return (EXIT_SUCCESS);
+	string s("Hello world!");
+	printf("%s\n", s.c_str());
+	return 0;
 }
-</pre><p>
-If you have at least gcc 3.4, μSTL is built as a standalone library,
-without linking to libstdc++ (except on BSD platforms where gcc does not
-support it) Because g++ links to it by default, you'll need to link your
-applications with gcc, or to pass <code>-nodefaultlibs -lc</code> to g++
-if you want to use μSTL to completely replace libstdc++.  This is where
-the actual space savings happen. (If you want to see just how much you can
-save, skip to the <a href="#Savings">Template Bloat Be Gone</a> section)
-</p>
+</pre>
 <h2 id="Containers">Containers and Iterators</h2>
 <p>
 STL containers provide a generic abstraction to arrays, linked lists,
@@ -109,13 +80,13 @@ that work on any container. Here are some examples of using vector,
 the container representing a simple array:
 </p><pre>
 vector&lt;int&gt; v;
-v.push_back (1);
-v.push_back (2);
+v.push_back(1);
+v.push_back(2);
 v[1] = 0;
-v.erase (v.begin() + 1);
+v.erase(v.begin() + 1);
 v.pop_back();
-v.insert (v.begin(), 4);
-v.resize (15);
+v.insert(v.begin(), 4);
+v.resize(15);
 </pre><p>
 As you can see, a vector is basically the same thing as the arrays
 you use now, except that it is resizable. The function names
@@ -131,21 +102,20 @@ of some system failure. Programmer errors assert. User or system errors
 throw exceptions.
 </p><p>
 Vectors are addressed with iterators, which are just like pointers (and
-usually are). Calling begin() gives you the pointer to the first element,
-calling end() gives you the pointer to the end of the last element. No,
+usually are). Calling <code>begin()</code> gives you the pointer to the first element,
+calling <code>end()</code> gives you the pointer to the end of the last element. No,
 not the last element, the end of it, or, more accurately, the end of the
 array. It's that way so you can keep incrementing an iterator until it
-is equal to the end() value, at which point you know you have processed
+is equal to the <code>end()</code> value, at which point you know you have processed
 all the elements in the list. This brings me to demonstrate how you
 ought to do that:
 </p><pre>
-foreach (vector&lt;int&gt;::iterator, i, v)
+foreach(vector&lt;int&gt;::iterator, i, v)
 	if (*i &lt; 5 || *i &gt; 10)
-	*i = 99;
+		*i = 99;
 </pre><p>
-Although the foreach macro is a μSTL-only extension, it is a one-liner
-you can easily copy out of uutility.h if you ever want to switch back to
-regular STL.  It is a great way to ensure you don't forget to increment
+The <code>foreach()</code> macro is a μSTL-only extension.
+It is a great way to ensure you don't forget to increment
 the counter or run past the end of the vector. The only catch to be aware
 of, when inside an iterator loop, is that if you modify the container,
 by adding or removing entries, you have to update the iterator, since the
@@ -153,19 +123,19 @@ container memory storage may have moved when resized. So, for example,
 if you wish to remove certain types of elements, you'd need to do use
 an index loop or something like:
 </p><pre>
-foreach (vector&lt;CEmployee&gt;::iterator, i, employees)
+foreach(vector&lt;CEmployee&gt;::iterator, i, employees)
 	if (i-&gt;m_Salary &gt; 50000 || i-&gt;m_Performance &lt; 100)
-	--(i = employees.erase (i));
+		--(i = employees.erase(i));
 </pre><p>
 This is pretty much all there is to say about containers. Create them,
 use them, resize them, that's what they are for. There are other
 container types, but you will probably not use them much. There's
 <code>set</code>, which is a perpetually sorted vector, useful when you
-want to binary_search a large collection. There's <code>map</code> which
+want to <code>binary_search()</code> a large collection. There's <code>map</code> which
 is an associative container where you can look up entries by key. Its
 utility goes down drastically when you have complex objects that need to
 be searched with more than one parameter, in which cast you are better
-off with vector and foreach. I have never needed the others, and do
+off with <code>vector</code> and <code>foreach</code>. I have never needed the others, and do
 not recommend their use. Their implementations are fully functional,
 but do not conform to STL complexity guarantees and are implemented as
 aliases to vector, which naturally changes their performance parameters.
@@ -175,29 +145,26 @@ aliases to vector, which naturally changes their performance parameters.
 Every program uses strings, and STL was kind enough to provide a
 specification. μSTL deviates a bit from the standard by not implementing
 wchar strings. There is only one <code>string</code> class, which assumes
-all your strings will be UTF8-encoded, and provides some additional
+all your strings will be UTF-8 encoded, and provides some additional
 functionality to make working with those easier. I did that for the same
 reason I dropped the locale classes; bloat. It is simply too expensive to
 implement the standard locale classes, as the enormous size of libstdc++
-illustrates. If you need them, you can still include them from libstdc++,
-but it may be just as simple to use the locale support provided by libc
-through printf, which may be called through <code>format</code> functions
-in string and ostringstream.
+illustrates.
 </p><p>
 Anyway, back to strings. You can think of the string object as a
 char vector with some additional operations built-in, like searching,
 concatenation, etc.
 </p><pre>
-string s ("Hello");
+string s("Hello");
 s += ' ';
 s += "world?";
-s.replace (s.find ('?'), 1, "!");
+s.replace(s.find ('?'), 1, "!");
 s[3] = s[s.find_first_of("lxy")];
 s[s.rfind('w')] = 'W';
-s.format ("A long %zd number of 0x%08lX\n", 345u, 0x12345);
-cout &lt;&lt; s &lt;&lt; endl;
+s.format("A long %zd number of 0x%08lX", 345u, 0x12345);
+printf("%s\n", s.c_str());
 </pre><p>
-A nonstandard behaviour you may encounter is from linked strings created
+A non-standard behaviour you may encounter is from linked strings created
 by the string constructor when given a null-terminated const string. In
 the above example, the constructor links when given a const string and
 stays as a const link until the space is added. If you try to write to it,
@@ -213,27 +180,27 @@ space and processor time to copy them if you just want to read them? I
 thought it a good tradeoff, considering that it is trasparent for the
 most common uses.
 </p><p>
-Other nonstandard extensions include a <code>format</code> function to
+Other non-standard extensions include a <code>format()</code> function to
 give you the functionality of sprintf for string objects. Another is
-the UTF8 stuff. Differing a bit from the standard, <code>size</code>
-returns the string length in bytes, <code>length</code> in characters.
-You can iterate by characters instead of bytes with a special utf8
+the UTF-8 stuff. Differing a bit from the standard, <code>size()</code>
+returns the string length in bytes, <code>length()</code> in characters.
+You can iterate by characters instead of bytes with a special UTF-8
 iterator:
 </p><pre>
-for (string::utf8_iterator i = s.utf8_begin(); i &lt; s.utf8_end(); ++ i)
-	DrawChar (*i);
+for(string::utf8_iterator i = s.utf8_begin(); i &lt; s.utf8_end(); ++ i)
+	DrawChar(*i);
 </pre><p>
 or just copy all the chars into an array and iterate over that:
 </p><pre>
-vector&lt;wchar_t&gt; result (s.length());
-copy (s.utf8_begin(), s.utf8_end(), result.begin());
-</pre><p>
+vector&lt;int&gt; result(s.length());
+copy(s.utf8_begin(), s.utf8_end(), result.begin());
+</pre><!--<p>
 To write wide characters to the string, wchar_t values can be directly
 given to push_back, insert, append, or assign, in the same way as the
 char ones.
-</p><p>
+</p>--><p>
 A few words must be said regarding reading wide characters. The shortest
-possible rule to follow is "don't!" I have received a few complaints about
+possible rule to follow is "don't!". I have received a few complaints about
 the fact that all offsets given to and returned by string functions are
 byte offsets and not character offsets. The problem with modifying or even
 looking for specific wide characters is that you are not supposed to know
@@ -253,7 +220,7 @@ actual character boundaries are entirely irrelevant. There are only
 two exceptions to this: first occurs if you are writing a text editor
 and want to insert user data at a character position, the second occurs
 if you are writing a font renderer and want to translate characters to
-glyphs. In both cases you should make use of the utf8_iterator to find
+glyphs. In both cases you should make use of the <code>utf8_iterator</code> to find
 character boundaries and values. Given that these two cases apply to
 just a handful of people who are involved in implementing user interface
 frameworks, I believe that the opacity restriction is well justified by
@@ -263,39 +230,41 @@ the amount of code space it saves for the vast majority of library users.
 <p>
 Algorithms are the other half of STL. They are simply templated common
 tasks that take iterator arguments, and as a result, work with any
-container. Most will take an iterator range, like (v.begin(), v.end()),
+container. Most will take an iterator range, like <code>(v.begin(), v.end())</code>,
 but you can, of course operate on a subset of a container by giving a
 different one. Because the usual operation is to use the whole container,
 μSTL provides versions of most algorithms that take container arguments
 instead of the iterator range.  Here are the algorithms you will actually
 find useful:
 </p><pre>
-copy (v1, v2.begin());		// Copies vector v1 to vector v2.
-fill (v, 5);			// Fills v with fives.
-copy_n (v1, 5, v2.begin());	// Copies first five elements only.
-fill_n (v.begin() + 5, 10, 5);	// Fills elements 5-15 with fives.
-sort (v);			// Sorts v.
-find (v, 14);			// Finds 14 in v, returning its iterator.
-binary_search (v, 13);		// Looks up 13 with binary search in a sorted vector.
-lower_bound (v, 13);		// Returns the iterator to where you want to insert 13.
-iota (v.begin(), v.end(), 0);	// Puts 0,1,2,3,4,... into v.
-reverse (v);			// Reverses all the elements in v.
+copy(v1, v2.begin());          <em>// Copies vector v1 to vector v2.</em>
+fill(v, 5);                    <em>// Fills v with fives.</em>
+copy_n(v1, 5, v2.begin());     <em>// Copies first five elements only.</em>
+fill_n(v.begin() + 5, 10, 5);  <em>// Fills elements 5-15 with fives.</em>
+sort(v);                       <em>// Sorts v.</em>
+find(v, 14);                   <em>// Finds 14 in v, returning its iterator.</em>
+binary_search(v, 13);          <em>// Looks up 13 with binary search in a sorted vector.</em>
+lower_bound(v, 13);            <em>// Returns the iterator to where you want to insert 13.</em>
+iota(v.begin(), v.end(), 0);   <em>// Puts 0,1,2,3,4,... into v.</em>
+reverse(v);                    <em>// Reverses all the elements in v.</em>
 </pre><p>
 The rest you can discover for yourself. There are obscure mathematical
-operations, like inner_product, set operations, heap operations, and
+operations, like <code>inner_product()</code>, set operations, heap operations, and
 lots and lots of predicate algorithms. The latter are algorithms that
 take a functor (an object that can be called like a function) and were
 supposed to help promote code reuse by encapsulating common operations.
-For example, STL expects you to use the <code>for_each</code> algorithm and
+For example, STL expects you to use the <code>for_each()</code> algorithm and
 write a little functor for all your iterative tasks:
 </p><pre>
-class CCompareAndReplace {
+class CCompareAndReplace
+{
 public:
 	CCompareAndReplace (int minValue, int maxValue, int badValue)
-	: m_MinValue (minValue), m_MaxValue (maxValue), m_BadValue (badValue) {}
-	void operator (int&amp; v) {
-	if (v &lt; m_MinValue || v &gt; m_MaxValue)
-		v = m_BadValue;
+		: m_MinValue (minValue), m_MaxValue (maxValue), m_BadValue (badValue) {}
+	void operator(int&amp; v)
+	{
+		if(v &lt; m_MinValue || v &gt; m_MaxValue)
+			v = m_BadValue;
 	}
 private:
 	int m_MinValue;
@@ -303,11 +272,11 @@ private:
 	int m_BadValue;
 };
 
-for_each (v.begin(), v.end(), CCompareAndReplace (5, 10, 99));
+for_each(v.begin(), v.end(), CCompareAndReplace(5, 10, 99));
 </pre><p>
 And yes, it really does work. Doesn't always generate much bloat either,
 since the compiler can often see right through all this trickery and
-expand the for_each into a loop without actually creating the functor
+expand the <code>for_each()</code> into a loop without actually creating the functor
 object. However, the compiler has a much harder time when you start
 using containers of complex objects or operating on member variables
 and member functions.  Since that is what you will most likely have in
@@ -316,18 +285,16 @@ algorithms is questionable.  Their readability is even more so,
 considering that the above fifteen line example can be written as a
 three line iterative foreach loop. Finally, there is the problem of
 where to put the functor. It just doesn't seem to "belong" anywhere in
-the object-oriented world. (C++0x changes that somewhat with lambda
+the object-oriented world. (C++11 changes that somewhat with lambda
 functions) Sorry, Stepanov, I just don't see how these things can be
 anything but an ugly, bloated hindrance.
 </p>
 <h2 id="Memblocks">Memblocks and Memlinks</h2>
 <p>
 The STL specification is only about containers and algorithms, the stuff
-described from here on is totally non-standard, so by using them you'll
-have to stick with μSTL as your STL implementation. I think it's worth
-it, but, of course, the choice is up to you.
+described from here on is totally non-standard.
 </p><p>
-The major difference between the standart STL implementation and μSTL is
+The major difference between the standard STL implementation and μSTL is
 that the former has memory management stuff all over the place, while
 the latter keeps it all together in the <code>memblock</code> class. Normally
 STL containers are resized by calling <code>new</code> to create more storage
@@ -353,158 +320,67 @@ What this one small concession does is allow aggregation of all memory
 management in one place, namely, the <code>memblock</code> class. All the
 containers are thus converted mostly into typecasting wrappers that
 exist to ensure type safety. Look at the assembly code and you'll see
-mostly calls to memblock's functions. This is precisely the feature
+mostly calls to <code>memblock</code>'s functions. This is precisely the feature
 that allows reduction in code instantiated by container templates.
 </p><p>
-However, memblock's usefulness doesn't end there! It can now replace
+However, <code>memblock</code>'s usefulness doesn't end there! It can now replace
 all your dynamically allocated buffers that you use for unstructured
 data. Need to read a file? Don't use new to allocate memory; use a
-memblock! It even has a friendly read_file member function for just
+<code>memblock</code>! <!--It even has a friendly read_file member function for just
 that purpose. Need to write a file? Use the write_file call! Unless
 you are working with a database or some really large archive, you
 should be able to load all your files this way. Imagine, not having
 to worry about file I/O again! It's much nicer to work with data in
 memory; you know how long it is, so you know when to stop. You can
-seek with impunity, and any operations have the cost of a memcpy.
+seek with impunity, and any operations have the cost of a memcpy.-->
 </p><p>
-Memblock is derived from memlink, an object for linking to a memory
+<code>memblock</code> is derived from <code>memlink</code>, an object for linking to a memory
 block. Now you get to store a pointer and the size of whatever it
-points to, but with μSTL you can use a memlink object to keep them
+points to, but with μSTL you can use a <code>memlink</code> object to keep them
 together, reducing source clutter and making your code easier to
-read and maintain. You can link to constant blocks too with cmemlink,
-from which memlink is derived. Because all three are in a single
+read and maintain. You can link to constant blocks too with <code>cmemlink</code>,
+from which <code>memlink</code> is derived. Because all three are in a single
 hierarchy, you never need to care whether you're working on an
 allocated block or on somebody else's allocated block. Pointers are
 kept together with block sizes, memory is freed when necessary,
 and you never have to call new or delete again. Who needs garbage
-collection? Memblocks give you the same functionality at a fraction
+collection? <code>memblock</code> gives you the same functionality at a fraction
 of the cost.
 </p><p>
-Linking is not limited to memlink. You can link memblock objects.
-You can link string objects. You can even link containers! Now
+Linking is not limited to <code>memlink</code>. You can link <code>memblock</code> objects.
+You can link <code>string</code> objects. You can even link containers! Now
 you can use alloca to create a vector on the stack; use the
 <code>typed_alloca_link(v,int,99)</code> macro. All linked objects
 will allocate memory and copy the linked data when you increase their
 size. You can also do it explicitly by calling <code>copy_link</code>.
 Why link? It's cheaper than copying and easier than keeping track
-of pointers. For example, here's a line parser:
+of pointers. For example, here's a line parser (<strong style="color:red">FIXME</strong>: implement <code>read_file()</code> and <code>write_file()</code> without using C++ streams)
 </p><pre>
 string buf, line;
-buf.read_file ("some_config_file.txt");
-for (uoff_t i = 0; i &lt; buf.size(); i += line.size() + 1) {
-	line.link (buf.iat(i), buf.iat (buf.find ('\n',i)));
-	process_line (line);
+buf.read_file("some_config_file.txt");
+for(uoff_t i = 0; i &lt; buf.size(); i += line.size() + 1)
+{
+	line.link(buf.iat(i), buf.iat(buf.find('\n', i)));
+	process_line(line);
 }
 </pre><p>
-This way process_line gets a string object instead of a pointer and
+This way <code>process_line()</code> gets a string object instead of a pointer and
 a size. If you don't rely on the string being null-terminated, which
 basically means not using libc functions on it, this is all you need.
-Otherwise buf will have to be writable and you can replace the newline
+Otherwise <code>buf</code> will have to be writable and you can replace the newline
 with a null. In either case you are using no extra heap. The overhead
 of link is negligible in most cases, but if you really want to do this
-in a tight loop, you can use relink call, which expands completely
-inline into one or two instructions, avoiding the virtual unlink() call.
+in a tight loop, you can use <code>relink()</code>, which expands completely
+inline into one or two instructions, avoiding the virtual <code>unlink()</code> call.
 </p>
 <h2 id="Streams">Streams</h2>
 <p>
-The C++ standard library provides global stream objects called cin,
-cout, and cerr to replace printf and friends for accessing stdin, stdout,
-and stderr, respectively. μSTL versions work mostly the same as the
-standard ones (yes, the <code>format</code> call is a μSTL extension). Most
-calls use snprintf for output and thus use whatever locale libc uses.
-</p><pre>
-cout &lt;&lt; "Hello world!" &lt;&lt; endl;
-cout &lt;&lt; 456 &lt;&lt; ios::hex &lt;&lt; 0x1234 &lt;&lt; endl;
-cerr.format ("You objects are at 0x%08X\n", &amp;o);
-</pre><p>
-String-writing streams are also available:
-</p><pre>
-ostringstream os;
-os &lt;&lt; "Writing " &lt;&lt; n &lt;&lt; " objects somewhere" &lt;&lt; endl;
-cout &lt;&lt; os.str() &lt;&lt; endl;
-</pre><p>
-fstream is a file access interface with exception handling for errors:
-</p><pre>
-fstream f;
-// C++ standard says that fstream does not throw by default,
-f.exceptions (fstream::allbadbits);	// so this enables throwing.
-f.open ("file.dat", ios::in | ios::out); // throws file_exception
-f.read (buf, bufSize);			// let's read something
-f.seek (334455);			// go somewhere
-f.write (buf2, buf2Size);		// and write something
-f.fnctl (FCNTLID(F_SETFL), O_NONBLOCK); // yup, ALL file operations
-memlink l = f.mmap (bufSize, offset);	// even mmap
-fill (l, 0);
-f.msync (l);
-f.munmap (l);
-f.close();	// also throws file_exception (with filename!)
-</pre><p>
-istream and ostream, which are not really usable by themselves in the
-standard implementation, are hijacked by μSTL to implement binary data
-input and output:
-</p><pre>
-const size_t writtenSize =
-	Align (stream_size_of(number) +
-		   stream_size_of(ctr)) + 
-	stream_size_of(n) +
-	stream_size_of(v);
-memblock buf (writtenSize);
-ostream os (buf);
-os &lt;&lt; number &lt;&lt; ctr;
-os.align();
-os &lt;&lt; n &lt;&lt; v;
-</pre><p>
-These operations are all very efficient, approaching a straight memcpy
-in performance. ostream will not resize the buffer, hence the necessity
-to estimate the final size. Most stream_size_of calls are computed at
-compile time and thus produce no code. Because the data is written as
-is, it is necessary to consider proper data alignment; for example,
-a 4 byte int can not be written at stream offset 2. Some architectures
-(Macs) actually crash when doing it; Intel processors just do it slowly.
-Hence the need to pack the data to a proper "grain". The default align
-call will pack to the maximum necessary grain, but can be given an
-argument to change that. In case you're wondering, the reason for all
-these idiosyncracies is optimization. The smallest and fastest possible
-code to dump your stuff into a binary file is produced by this method.
-μSTL defines flow operators to write integral values, strings, and
-containers, but you can custom-serialize your objects like this:
-</p><pre>
-namespace myns {
-
-/// Some class I want to serialize
-class CMyClass {
-public:
-	void		read (istream&amp; is);
-	void		write (ostream&amp; os) const;
-	size_t		stream_size (void) const;
-private:
-	vector&lt;int&gt;		m_Elements;	///&lt; A bunch of elements.
-	size_t		m_SomeSize;	///&lt; Some integral value.
-	MyObject		m_SomeObject;	///&lt; Some other streamable object.
-}
-
-/// Reads the object from stream \p is.
-void CMyClass::read (istream&amp; is)
-{
-	is &gt;&gt; m_Elements &gt;&gt; m_SomeSize &gt;&gt; m_SomeObject;
-}
-
-/// Writes the object to stream \p os.
-void CMyClass::write (ostream&amp; os) const
-{
-	os &lt;&lt; m_Elements &lt;&lt; m_SomeSize &lt;&lt; m_SomeObject;
-}
-
-/// Returns the size of the written object.
-size_t CMyClass::stream_size (void) const
-{
-	return (stream_size_of (m_Elements) +
-		stream_size_of (m_SomeSize) +
-		stream_size_of (m_SomeObject));
-}
-
-} // namespace myns
-</pre>
+The C++ standard library specification defines global stream objects called <code>cin</code>,
+<code>cout</code>, and <code>cerr</code> to replace <code>printf()</code> and friends for accessing stdin, stdout,
+and stderr, respectively; as well as <code>fstream</code> for accessing files.
+Since their added value is small when it comes to basic IO functionality and
+they are memory hungry, they are not included in the FeOS port of μSTL.
+</p>
 <h2 id="Tuples">Tuples</h2>
 <p>
 One last container I'll mention is a <code>tuple</code>, which is a
@@ -512,32 +388,32 @@ fixed-size array of identical elements. No, it's not the same as the tuple
 in boost, which is more like a template-defined struct. This one should
 have been named "array", which is what it will be called in the next STL
 standard, but I guess I'm stuck with the name now. What are they good
-for? Graphical objects. Points, sizes, rectangles, triangles, etc. As a
+for? Graphical objects. Points, sizes, rectangles, triangles, etc. <!--As a
 bonus, operations on tuples can automatically use SIMD instructions if
-they are available. Any fixed size-array also works better as a tuple,
+they are available.--> Any fixed size-array also works better as a tuple,
 since it becomes a standard STL container, which you can use with any
 algorithm, copy by assignment, initialize in the constructor, etc.
 </p><pre>
-typedef int32_t			coord_t;
-typedef tuple&lt;2, coord_t&gt;	Point2d;
-typedef tuple&lt;2, coord_t&gt;	Size2d;
-typedef tuple&lt;2, Point2d&gt;	Rect;
+typedef int32_t coord_t;
+typedef tuple&lt;2, coord_t&gt; Point2d;
+typedef tuple&lt;2, coord_t&gt; Size2d;
+typedef tuple&lt;2, Point2d&gt; Rect;
 
-Rect r (Point2d (1,2), Point2d (3,4));
-r += Size2d (4, 4);
-r[1] -= Size2d (1, 1);
-foreach (Rect::iterator, i, r)
-	TransformPoint (*i);
-Point2d pt (1, 2);
+Rect r(Point2d(1,2), Point2d(3,4));
+r += Size2d(4, 4);
+r[1] -= Size2d(1, 1);
+foreach(Rect::iterator, i, r)
+	TransformPoint(*i);
+Point2d pt(1, 2);
 pt += r[0];
 pt *= 2;
 </pre>
 <h2 id="Exceptions">Exceptions</h2>
 <p>
 μSTL implements all the standard exception classes defined by the
-C++ standard. The exception tree is standalone, but is derived
-from std::exception when compiling with libstdc++ for ease of
-catching everything. μSTL exceptions implement some additional useful
+C++ standard. The exception tree <!--is standalone, but--> is always derived
+from <code>std::exception</code>. <!--when compiling with libstdc++ for ease of
+catching everything--> <!--μSTL exceptions implement some additional useful
 features. First, they are completely serializable. You can write them
 as a binary blob into a file, send them over a network, and handle them
 somewhere else. Each exception will print an informative error message
@@ -561,163 +437,16 @@ your exceptions so that you should not care where it was thrown from,
 situations occasionally arise while debugging where knowing the thrower
 is useful to fix the bug a little faster than otherwise.
 </p><p>
-Finally, there are additional exception classes for dealing with libc
-function errors, file errors, and stream classes. libc_exception can
+Finally, There are additional exception classes for dealing with libc
+function errors, file errors, and stream classes. <code>libc_exception</code> can
 be thrown whenever a libc function fails, immediately telling you
 what the function call was and the errno description of the failure.
-file_exception, thrown by fstream operations, also contains the file name,
-which can be pretty darn useful. stream_bounds_exception is extremely
+<code>file_exception</code>, thrown by fstream operations, also contains the file name,
+which can be pretty darn useful. <code>stream_bounds_exception</code> is extremely
 useful in debugging corrupted data, as it tells you exactly where the
-corruption starts and what you were trying to read there.
-</p>
-<h2 id="Savings">Template Bloat Be Gone</h2>
-<p>
-So how much space are you going to save and where? Allow me to demonstrate with
-the following small program. I'm basically creating a vector and exercise the
-most common operations. Those are resize, push_back, insert, and erase, which
-you use pretty much every time you have a vector.
-</p><pre>
-#if USING_USTL
-	#include &lt;ustl.h&gt;
-	using namespace ustl;
-#else
-	#include &lt;vector&gt;
-	using namespace std;
-#endif
-
-int main (void)
-{
-	vector&lt;int&gt; v;
-	v.resize (30);
-	for (size_t i = 0; i &lt; v.size(); ++ i)
-	v[i] = i;
-	v.push_back (57);
-	v.insert (v.begin() + 20, 555);
-	v.erase (v.begin() + 3);
-	return (EXIT_SUCCESS);
-}
-</pre><p>
-Feel free to compile it and see for yourself. I'm compiling on a Core
-i7 with gcc 4.5.2 and <code>-Os -DNDEBUG=1</code>. The libstdc++ version
-is linked implicitly with it, and μSTL version is linked with gcc
-(instead of g++) and <code>-lustl</code>. Both executables are stripped.
-The libstdc++ version looks like this:
-</p><pre>
-% ls -l std/tes
-7096 tes
-% size std/tes
-text	data	bss	dec	hex	filename
-3780	632	16	4428	114c	std/tes
-% size -A std/tes.o
-std/tes.o  :
-section                                                                                                      size
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.group                                                                                                          8
-.text                                                                                                         256
-.data                                                                                                           0
-.bss                                                                                                            0
-.text._ZNSt6vectorIiSaIiEED2Ev                                                                                  8
-.text._ZNKSt6vectorIiSaIiEE12_M_check_lenEmPKc                                                                 68
-.text._ZNSt11__copy_moveILb0ELb1ESt26random_access_iterator_tagE8__copy_mIiEEPT_PKS3_S6_S4_                    51
-.text._ZSt14__copy_move_a2ILb0EN9__gnu_cxx17__normal_iteratorIPiSt6vectorIiSaIiEEEES6_ET1_T0_S8_S7_            14
-.text._ZSt4copyIN9__gnu_cxx17__normal_iteratorIPiSt6vectorIiSaIiEEEES6_ET0_T_S8_S7_                            14
-.text._ZNSt20__copy_move_backwardILb0ELb1ESt26random_access_iterator_tagE13__copy_move_bIiEEPT_PKS3_S6_S4_     63
-.rodata.str1.1                                                                                                 45
-.text._ZNSt6vectorIiSaIiEE14_M_fill_insertEN9__gnu_cxx17__normal_iteratorIPiS1_EEmRKi                         355
-.text._ZNSt6vectorIiSaIiEE6resizeEmi                                                                           64
-.text._ZNSt6vectorIiSaIiEE13_M_insert_auxEN9__gnu_cxx17__normal_iteratorIPiS1_EERKi                           195
-.text._ZNSt6vectorIiSaIiEE9push_backERKi                                                                       46
-.text._ZNSt6vectorIiSaIiEE6insertEN9__gnu_cxx17__normal_iteratorIPiS1_EERKi                                    79
-.gcc_except_table                                                                                              14
-.comment                                                                                                       40
-.note.GNU-stack                                                                                                 0
-.eh_frame                                                                                                     576
-Total                                                                                                        1976
-</pre><p>
-The μSTL version looks like this:
-</p><pre>
-% ls -l ustl/tes
-5720 tes
-% size ustl/tes
-text	data	bss	dec	hex	filename
-2435	616	16	3067	bfb	ustl/tes
-% size -A ustl/tes.o
-ustl/tes.o  :
-section             size   addr
-.text                327      0
-.data                  0      0
-.bss                   0      0
-.gcc_except_table     19      0
-.comment              40      0
-.note.GNU-stack        0      0
-.eh_frame             88      0
-Total                474
-</pre><p>
-Let's see what's going on here. The .text size in the std version is
-smaller, indicating less inlined functionality. This version of gcc
-libstdc++ instantiates additional eleven functions totalling 953 bytes
-just for this one vector type. These functions will become larger for
-containers with objects, but about 1k in savings that you see as the
-difference in execuable size is a good measure. The μSTL version inlines
-everything and calls memblock functions instead.
-</p><p>
-1k doesn't seem like much, but consider that you get it for <em>every
-type of container you instantiate</em>! An int vector here, a float
-vector here, a bunch of object containers there, and before you know it
-you are using half your executable just for container overhead.
-</p><p>
-But wait, there is more! Let's look at the total memory footprint:
-</p><pre>
-% footprint std/tes
-   text	   data	    bss	    dec	    hex	filename
-   3780	    632	     16	   4428	   114c	tes
-  84445	    928	    632	  86005	  14ff5	libgcc_s.so.1
- 527390	    720	     72	 528182	  80f36	libm.so.6
- 962481	  34816	  84664	1081961	 108269	libstdc++.so.6
-1404487	  18024	  20032	1442543	 1602ef	libc.so.6
-2982583	  55120	 105416	3143119	 2ff5cf	(TOTALS)
-
-% footprint ustl/tes
-   text	   data	    bss	    dec	    hex	filename
-   2435	    616	     16	   3067	    bfb	tes
-  84445	    928	    632	  86005	  14ff5	libgcc_s.so.1
- 152800	  10408	  73248	 236456	  39ba8	libustl.so.1.5
-1404487	  18024	  20032	1442543	 1602ef	libc.so.6
-1644167	  29976	  93928	1768071	 1afa87	(TOTALS)
-</pre><p>
-As you can see, the footprint for the μSTL version is 44% smaller,
-saving 1375048 bytes. If you don't count libc, measuring only the
-C++-specific overhead, libstdc++ loads 1696148 while libustl only 322461,
-<em>five times less</em>! Finally, most of μSTL's size comes from gcc's
-support libraries; if you compile μSTL configured <code>--with-libstdc++</code>
-option, then you'll see that it only takes up 72322 bytes, of which only
-23350 are used by .text, meaning that only about a third of the library
-size is my fault. gcc developers will have to reduce the size of libsupc++
-before any further size reduction would be practical.
-</p><p>
-One final note concerns the current gcc versions, 4.4 and later. gcc
-developers have decided, for various reasons, to treat the inline keyword
-as nothing more than a hint to the optimizer, resulting in a lot less
-inlining for μSTL-using code.  You can see which functions fail to inline
-if you turn on -Winline warning. Back in gcc 3 days there were various
-parameters that could be tweaked to get the inlining to happen. These no
-longer seem to work. Because it takes quite a bit of code to make these
-failures happen, I am unable to submit a gcc bug for it. Simple examples
-don't exhibit inlining failures and submitting the entire μSTL codebase
-seems inappropriate. Therefore I've pretty much given up on it. The only
-solution I can come up with is to just clobber the optimizer over the head
-with <code>#define inline __attribute__((always_inline)) inline</code>. It
-is enabled if you configure with <code>--force-inline</code>. The above
-examples are compiled with this option.
+corruption starts and what you were trying to read there.-->
+Due to Nintendo DS constraints, <code>libc_exception</code>, <code>file_exception</code> and
+<code>stream_bounds_exception</code> are not included in the FeOS port.
 </p>
 </body>
 </html>
