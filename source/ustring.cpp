@@ -329,9 +329,7 @@ int string::vformat (const char* fmt, va_list args)
     do {
 	reserve (rv);
 	__va_copy (args2, args);
-	//rv = vsnprintf (data(), memblock::capacity(), fmt, args2);
-	// TEMPTEMPTEMP
-	rv = vsprintf (data(), fmt, args2);
+	rv = vsnprintf (data(), memblock::capacity(), fmt, args2);
 	rv = min (rv, memblock::capacity());
     } while (rv > capacity());
     resize (min (rv, capacity()));
