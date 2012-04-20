@@ -1,5 +1,5 @@
-uSTL for FeOS - r2
-------------------
+uSTL for FeOS - r2a - Based on uSTL v1.6
+----------------------------------------
 
    http://feos.mtheall.com/uSTL-FeOS/
    https://github.com/fincs/uSTL-FeOS/

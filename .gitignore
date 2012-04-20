@@ -1,6 +1,7 @@
 *~
 *.fx2
 *.elf
+*.dbg
 *.imp.a
 build/
 lib/
